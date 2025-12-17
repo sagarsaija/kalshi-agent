@@ -22,7 +22,7 @@ A real-time dashboard to track your Kalshi trades, P/L, and portfolio performanc
 
 - FastAPI (Python)
 - SQLite for local data storage
-- Kalshi API with RSA authentication
+- Kalshi API with RSA-PSS/ECDSA authentication
 
 **Frontend:**
 
@@ -62,18 +62,15 @@ Create `backend/.env` with:
 
 ```env
 API_KEY_ID=your_api_key_id_here
-PRIVATE_KEY=-----BEGIN EC PRIVATE KEY-----
+PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----
 your_private_key_content_here
------END EC PRIVATE KEY-----
+-----END RSA PRIVATE KEY-----
 ```
 
-**Note:** The private key should include the full PEM headers. If your key is a single line, wrap it with:
+**Note:** Both RSA and EC private keys are supported. The key can be:
 
-```
------BEGIN EC PRIVATE KEY-----
-<your key here>
------END EC PRIVATE KEY-----
-```
+- Multi-line PEM format (recommended)
+- Single-line with headers concatenated (auto-formatted by the backend)
 
 ### 3. Start Backend
 
@@ -161,7 +158,13 @@ Frontend will be available at `http://localhost:3000`
 
 ### "Could not load private key"
 
-Make sure your private key in `.env` includes the PEM headers and is properly formatted. Kalshi uses EC (Elliptic Curve) keys.
+Make sure your private key in `.env` includes the PEM headers (`-----BEGIN RSA PRIVATE KEY-----` or `-----BEGIN EC PRIVATE KEY-----`). Both RSA and EC keys are supported.
+
+### "401 Unauthorized"
+
+- Verify your `API_KEY_ID` is correct
+- Ensure your private key matches the public key registered with Kalshi
+- Check that your API key has the necessary permissions
 
 ### CORS errors
 

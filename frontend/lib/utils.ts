@@ -50,8 +50,20 @@ export function formatDateTime(isoString: string): string {
 
 /**
  * Format date only
+ * Handles YYYY-MM-DD strings by parsing as local time to avoid timezone shifts
  */
 export function formatDate(dateString: string): string {
+  // For YYYY-MM-DD format, parse as local time to avoid UTC interpretation
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+  }
+
+  // For ISO strings with time, use as-is
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {
     month: "short",

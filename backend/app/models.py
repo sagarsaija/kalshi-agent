@@ -72,3 +72,14 @@ class DailyPnL(Base):
     total_pnl = Column(Integer, default=0)
     trade_count = Column(Integer, default=0)
     volume = Column(Integer, default=0)  # total trading volume in cents
+
+
+class Transaction(Base):
+    """Manual deposit/withdrawal tracking."""
+    __tablename__ = "transactions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String, nullable=False)  # 'deposit' or 'withdrawal'
+    amount = Column(Integer, nullable=False)  # in cents (positive for both types)
+    note = Column(String, nullable=True)  # optional description
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)

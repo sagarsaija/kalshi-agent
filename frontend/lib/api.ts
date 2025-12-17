@@ -104,15 +104,55 @@ export interface MarketBreakdown {
   win_rate: number;
 }
 
-async function fetchApi<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
+async function fetchApi<T>(
+  endpoint: string,
+  params?: Record<string, string>
+): Promise<T> {
   const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value);
     });
   }
-  
+
   const response = await fetch(url.toString());
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+export interface Transaction {
+  id: number;
+  type: "deposit" | "withdrawal";
+  amount: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface TransactionSummary {
+  total_deposits: number;
+  total_withdrawals: number;
+  net_deposited: number;
+}
+
+async function postApi<T>(
+  endpoint: string,
+  data: Record<string, unknown>
+): Promise<T> {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+  return response.json();
+}
+
+async function deleteApi<T>(endpoint: string): Promise<T> {
+  const response = await fetch(`${API_BASE}${endpoint}`, { method: "DELETE" });
   if (!response.ok) {
     throw new Error(`API error: ${response.status}`);
   }
@@ -122,35 +162,67 @@ async function fetchApi<T>(endpoint: string, params?: Record<string, string>): P
 export const api = {
   // Portfolio
   getBalance: () => fetchApi<Balance>("/portfolio/balance"),
-  getPositions: () => fetchApi<{ positions: Position[]; count: number }>("/portfolio/positions"),
+  getPositions: () =>
+    fetchApi<{ positions: Position[]; count: number }>("/portfolio/positions"),
   getPortfolioHistory: (period: Period) =>
-    fetchApi<{ history: PortfolioHistory[]; period: string }>("/portfolio/history", { period }),
-  getSummary: (period: Period) => fetchApi<Summary>("/portfolio/summary", { period }),
+    fetchApi<{ history: PortfolioHistory[]; period: string }>(
+      "/portfolio/history",
+      { period }
+    ),
+  getSummary: (period: Period) =>
+    fetchApi<Summary>("/portfolio/summary", { period }),
 
   // Trades
   getFills: (period: Period, limit = 100) =>
-    fetchApi<{ fills: Fill[]; cursor: string | null; period: string }>("/trades/fills", {
-      period,
-      limit: limit.toString(),
-    }),
-  getSettlements: (period: Period, limit = 100) =>
-    fetchApi<{ settlements: Settlement[]; cursor: string | null; period: string }>(
-      "/trades/settlements",
-      { period, limit: limit.toString() }
+    fetchApi<{ fills: Fill[]; cursor: string | null; period: string }>(
+      "/trades/fills",
+      {
+        period,
+        limit: limit.toString(),
+      }
     ),
+  getSettlements: (period: Period, limit = 100) =>
+    fetchApi<{
+      settlements: Settlement[];
+      cursor: string | null;
+      period: string;
+    }>("/trades/settlements", { period, limit: limit.toString() }),
   getRecentTrades: (limit = 20) =>
     fetchApi<{ trades: Fill[] }>("/trades/recent", { limit: limit.toString() }),
 
   // Analytics
   getDailyPnL: (period: Period) =>
-    fetchApi<{ daily_pnl: DailyPnL[]; period: string }>("/analytics/daily-pnl", { period }),
+    fetchApi<{ daily_pnl: DailyPnL[]; period: string }>(
+      "/analytics/daily-pnl",
+      { period }
+    ),
   getCumulativePnL: (period: Period) =>
-    fetchApi<{ cumulative_pnl: CumulativePnL[]; period: string }>("/analytics/cumulative-pnl", {
-      period,
-    }),
-  getWinRate: (period: Period) => fetchApi<WinRate>("/analytics/win-rate", { period }),
+    fetchApi<{ cumulative_pnl: CumulativePnL[]; period: string }>(
+      "/analytics/cumulative-pnl",
+      {
+        period,
+      }
+    ),
+  getWinRate: (period: Period) =>
+    fetchApi<WinRate>("/analytics/win-rate", { period }),
   getMarketBreakdown: (period: Period) =>
-    fetchApi<{ breakdown: MarketBreakdown[]; period: string }>("/analytics/market-breakdown", {
-      period,
-    }),
+    fetchApi<{ breakdown: MarketBreakdown[]; period: string }>(
+      "/analytics/market-breakdown",
+      {
+        period,
+      }
+    ),
+
+  // Transactions (deposits/withdrawals)
+  getTransactions: () =>
+    fetchApi<{ transactions: Transaction[] }>("/transactions"),
+  getTransactionsSummary: () =>
+    fetchApi<TransactionSummary>("/transactions/summary"),
+  addTransaction: (
+    type: "deposit" | "withdrawal",
+    amount: number,
+    note?: string
+  ) => postApi<Transaction>("/transactions", { type, amount, note }),
+  deleteTransaction: (id: number) =>
+    deleteApi<{ deleted: boolean }>(`/transactions/${id}`),
 };

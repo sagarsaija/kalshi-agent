@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import portfolio, trades, analytics
+from app.routers import portfolio, trades, analytics, transactions
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.add_middleware(
 app.include_router(portfolio.router, prefix="/api")
 app.include_router(trades.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(transactions.router, prefix="/api")
 
 
 @app.get("/")

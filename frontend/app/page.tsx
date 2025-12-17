@@ -10,6 +10,7 @@ import { PositionsTable } from "@/components/positions-table";
 import { TradesTable } from "@/components/trades-table";
 import { SettlementsTable } from "@/components/settlements-table";
 import { MarketBreakdown } from "@/components/market-breakdown";
+import { TransactionsPanel } from "@/components/transactions-panel";
 import { RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -32,7 +33,9 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Kalshi Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Track your trades and P/L</p>
+              <p className="text-sm text-muted-foreground">
+                Track your trades and P/L
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <PeriodSelector value={period} onChange={setPeriod} />
@@ -62,9 +65,10 @@ export default function Dashboard() {
         </div>
 
         {/* Tables Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <PositionsTable />
           <MarketBreakdown period={period} />
+          <TransactionsPanel />
         </div>
 
         {/* Trade History Row */}

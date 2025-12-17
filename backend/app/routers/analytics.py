@@ -23,11 +23,95 @@ def parse_timestamp_to_ms(ts) -> Optional[int]:
     return None
 
 
+def timestamp_to_date_str(ts) -> Optional[str]:
+    """Convert a timestamp to YYYY-MM-DD string."""
+    if ts is None:
+        return None
+    if isinstance(ts, int):
+        return datetime.fromtimestamp(ts / 1000).strftime("%Y-%m-%d")
+    if isinstance(ts, str):
+        try:
+            dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+            return dt.strftime("%Y-%m-%d")
+        except ValueError:
+            return None
+    return None
+
+
+async def get_all_fills(client, min_ts: Optional[int] = None) -> list:
+    """Fetch all fills, optionally filtered by min timestamp."""
+    all_fills = []
+    cursor = None
+    while True:
+        data = await client.get_fills(limit=100, cursor=cursor, min_ts=min_ts)
+        fills = data.get("fills", [])
+        all_fills.extend(fills)
+        cursor = data.get("cursor")
+        if not cursor or not fills:
+            break
+    return all_fills
+
+
+async def get_all_settlements(client) -> list:
+    """Fetch all settlements."""
+    all_settlements = []
+    cursor = None
+    while True:
+        data = await client.get_settlements(limit=100, cursor=cursor)
+        settlements = data.get("settlements", [])
+        all_settlements.extend(settlements)
+        cursor = data.get("cursor")
+        if not cursor or not settlements:
+            break
+    return all_settlements
+
+
+def calculate_cost_basis_by_ticker(fills: list) -> dict:
+    """
+    Calculate cost basis per ticker from fills.
+    Cost basis = money spent on buys - money received from sells (before settlement)
+    
+    Returns dict: ticker -> cost in cents
+    """
+    cost_by_ticker = defaultdict(int)
+    
+    for fill in fills:
+        ticker = fill.get("ticker")
+        if not ticker:
+            continue
+        
+        count = fill.get("count", 0)
+        side = fill.get("side")  # "yes" or "no"
+        action = fill.get("action")  # "buy" or "sell"
+        
+        # Get the price for the side we're trading
+        if side == "yes":
+            price = fill.get("yes_price", 0)
+        else:
+            price = fill.get("no_price", 0)
+        
+        cost = count * price  # in cents
+        
+        if action == "buy":
+            # Buying costs money (negative cash flow)
+            cost_by_ticker[ticker] += cost
+        else:
+            # Selling returns money (positive cash flow, reduces cost basis)
+            cost_by_ticker[ticker] -= cost
+    
+    return dict(cost_by_ticker)
+
+
 @router.get("/daily-pnl")
 async def get_daily_pnl(
     period: str = Query("30d", description="Time period: 1h, 1d, 7d, 30d, all"),
 ):
-    """Get daily P/L breakdown for charting."""
+    """
+    Get daily P/L breakdown for charting.
+    
+    P/L is calculated as: settlement_revenue - cost_basis
+    Where cost_basis comes from fills (buys - sells before settlement)
+    """
     client = get_kalshi_client()
     
     # Calculate time range
@@ -43,23 +127,24 @@ async def get_daily_pnl(
     elif period == "30d":
         min_ts = int((now - timedelta(days=30)).timestamp() * 1000)
     
-    # Get all settlements for realized P/L
-    all_settlements = []
-    cursor = None
-    while True:
-        data = await client.get_settlements(limit=100, cursor=cursor)
-        settlements = data.get("settlements", [])
-        all_settlements.extend(settlements)
-        cursor = data.get("cursor")
-        if not cursor or not settlements:
-            break
+    # Get all data (we need all fills to calculate cost basis, not just recent ones)
+    all_settlements = await get_all_settlements(client)
+    all_fills = await get_all_fills(client)  # Get ALL fills for cost basis calculation
     
-    # Group settlements by day
+    # Calculate cost basis per ticker
+    cost_by_ticker = calculate_cost_basis_by_ticker(all_fills)
+    
+    # Track which tickers have been settled (to avoid double-counting cost basis)
+    settled_tickers = set()
+    
+    # Group settlements by day with proper P/L calculation
     daily_data = defaultdict(lambda: {
         "realized_pnl": 0,
         "settlement_count": 0,
         "wins": 0,
         "losses": 0,
+        "trade_count": 0,
+        "volume": 0,
     })
     
     for s in all_settlements:
@@ -67,57 +152,51 @@ async def get_daily_pnl(
         if not settled_time:
             continue
         
-        # Convert to ms timestamp for comparison
         settled_time_ms = parse_timestamp_to_ms(settled_time)
         
         # Filter by period
         if min_ts and settled_time_ms and settled_time_ms < min_ts:
             continue
         
-        # Convert to date
-        if isinstance(settled_time, int):
-            date_str = datetime.fromtimestamp(settled_time / 1000).strftime("%Y-%m-%d")
-        else:
-            date_str = datetime.fromisoformat(settled_time.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+        date_str = timestamp_to_date_str(settled_time)
+        if not date_str:
+            continue
         
-        revenue = s.get("revenue", 0)
-        daily_data[date_str]["realized_pnl"] += revenue
+        ticker = s.get("ticker")
+        revenue = s.get("revenue", 0)  # This is just the payout, not profit
+        
+        # Calculate true P/L: payout - cost basis
+        cost_basis = cost_by_ticker.get(ticker, 0)
+        true_pnl = revenue - cost_basis
+        
+        # Track this ticker as settled
+        settled_tickers.add(ticker)
+        
+        daily_data[date_str]["realized_pnl"] += true_pnl
         daily_data[date_str]["settlement_count"] += 1
         
-        if revenue > 0:
+        if true_pnl > 0:
             daily_data[date_str]["wins"] += 1
-        elif revenue < 0:
+        elif true_pnl < 0:
             daily_data[date_str]["losses"] += 1
     
-    # Get all fills for trading volume
-    all_fills = []
-    cursor = None
-    while True:
-        data = await client.get_fills(limit=100, cursor=cursor, min_ts=min_ts)
-        fills = data.get("fills", [])
-        all_fills.extend(fills)
-        cursor = data.get("cursor")
-        if not cursor or not fills:
-            break
-    
-    # Add fill data to daily breakdown
+    # Add fill data (volume, trade count) filtered by period
     for fill in all_fills:
         created_time = fill.get("created_time")
         if not created_time:
             continue
         
-        if isinstance(created_time, int):
-            date_str = datetime.fromtimestamp(created_time / 1000).strftime("%Y-%m-%d")
-        else:
-            date_str = datetime.fromisoformat(created_time.replace("Z", "+00:00")).strftime("%Y-%m-%d")
+        created_time_ms = parse_timestamp_to_ms(created_time)
+        if min_ts and created_time_ms and created_time_ms < min_ts:
+            continue
+        
+        date_str = timestamp_to_date_str(created_time)
+        if not date_str:
+            continue
         
         count = fill.get("count", 0)
         side = fill.get("side")
         price = fill.get("yes_price", 0) if side == "yes" else fill.get("no_price", 0)
-        
-        if "trade_count" not in daily_data[date_str]:
-            daily_data[date_str]["trade_count"] = 0
-            daily_data[date_str]["volume"] = 0
         
         daily_data[date_str]["trade_count"] += 1
         daily_data[date_str]["volume"] += count * price
@@ -132,8 +211,8 @@ async def get_daily_pnl(
             "settlement_count": data["settlement_count"],
             "wins": data["wins"],
             "losses": data["losses"],
-            "trade_count": data.get("trade_count", 0),
-            "volume": data.get("volume", 0),
+            "trade_count": data["trade_count"],
+            "volume": data["volume"],
         })
     
     return {"daily_pnl": result, "period": period}
@@ -168,7 +247,7 @@ async def get_cumulative_pnl(
 async def get_win_rate(
     period: str = Query("all", description="Time period: 1h, 1d, 7d, 30d, all"),
 ):
-    """Get win/loss statistics."""
+    """Get win/loss statistics with proper P/L calculation."""
     client = get_kalshi_client()
     
     # Calculate time range
@@ -184,18 +263,14 @@ async def get_win_rate(
     elif period == "30d":
         min_ts = int((now - timedelta(days=30)).timestamp() * 1000)
     
-    # Get all settlements
-    all_settlements = []
-    cursor = None
-    while True:
-        data = await client.get_settlements(limit=100, cursor=cursor)
-        settlements = data.get("settlements", [])
-        all_settlements.extend(settlements)
-        cursor = data.get("cursor")
-        if not cursor or not settlements:
-            break
+    # Get all data
+    all_settlements = await get_all_settlements(client)
+    all_fills = await get_all_fills(client)
     
-    # Calculate stats
+    # Calculate cost basis per ticker
+    cost_by_ticker = calculate_cost_basis_by_ticker(all_fills)
+    
+    # Calculate stats with proper P/L
     wins = 0
     losses = 0
     total_win_amount = 0
@@ -207,13 +282,17 @@ async def get_win_rate(
         if min_ts and settled_time_ms and settled_time_ms < min_ts:
             continue
         
+        ticker = s.get("ticker")
         revenue = s.get("revenue", 0)
-        if revenue > 0:
+        cost_basis = cost_by_ticker.get(ticker, 0)
+        true_pnl = revenue - cost_basis
+        
+        if true_pnl > 0:
             wins += 1
-            total_win_amount += revenue
-        elif revenue < 0:
+            total_win_amount += true_pnl
+        elif true_pnl < 0:
             losses += 1
-            total_loss_amount += abs(revenue)
+            total_loss_amount += abs(true_pnl)
     
     total = wins + losses
     win_rate = (wins / total * 100) if total > 0 else 0
@@ -236,7 +315,7 @@ async def get_win_rate(
 async def get_market_breakdown(
     period: str = Query("all", description="Time period: 1h, 1d, 7d, 30d, all"),
 ):
-    """Get P/L breakdown by market/ticker."""
+    """Get P/L breakdown by market/ticker with proper P/L calculation."""
     client = get_kalshi_client()
     
     # Calculate time range
@@ -252,18 +331,14 @@ async def get_market_breakdown(
     elif period == "30d":
         min_ts = int((now - timedelta(days=30)).timestamp() * 1000)
     
-    # Get all settlements
-    all_settlements = []
-    cursor = None
-    while True:
-        data = await client.get_settlements(limit=100, cursor=cursor)
-        settlements = data.get("settlements", [])
-        all_settlements.extend(settlements)
-        cursor = data.get("cursor")
-        if not cursor or not settlements:
-            break
+    # Get all data
+    all_settlements = await get_all_settlements(client)
+    all_fills = await get_all_fills(client)
     
-    # Group by ticker
+    # Calculate cost basis per ticker
+    cost_by_ticker = calculate_cost_basis_by_ticker(all_fills)
+    
+    # Group by ticker with proper P/L
     by_ticker = defaultdict(lambda: {
         "pnl": 0,
         "wins": 0,
@@ -279,13 +354,15 @@ async def get_market_breakdown(
         
         ticker = s.get("ticker", "unknown")
         revenue = s.get("revenue", 0)
+        cost_basis = cost_by_ticker.get(ticker, 0)
+        true_pnl = revenue - cost_basis
         
-        by_ticker[ticker]["pnl"] += revenue
+        by_ticker[ticker]["pnl"] += true_pnl
         by_ticker[ticker]["count"] += 1
         
-        if revenue > 0:
+        if true_pnl > 0:
             by_ticker[ticker]["wins"] += 1
-        elif revenue < 0:
+        elif true_pnl < 0:
             by_ticker[ticker]["losses"] += 1
     
     # Convert to sorted list (by P/L)

@@ -121,11 +121,67 @@ async def get_portfolio_history(
     return {"history": formatted_history, "period": period}
 
 
+def calculate_cost_basis_by_ticker(fills: list) -> dict:
+    """
+    Calculate cost basis per ticker from fills.
+    Cost basis = money spent on buys - money received from sells
+    """
+    from collections import defaultdict
+    cost_by_ticker = defaultdict(int)
+    
+    for fill in fills:
+        ticker = fill.get("ticker")
+        if not ticker:
+            continue
+        
+        count = fill.get("count", 0)
+        side = fill.get("side")
+        action = fill.get("action")
+        
+        price = fill.get("yes_price", 0) if side == "yes" else fill.get("no_price", 0)
+        cost = count * price
+        
+        if action == "buy":
+            cost_by_ticker[ticker] += cost
+        else:
+            cost_by_ticker[ticker] -= cost
+    
+    return dict(cost_by_ticker)
+
+
+async def get_all_fills(client) -> list:
+    """Fetch all fills."""
+    all_fills = []
+    cursor = None
+    while True:
+        data = await client.get_fills(limit=100, cursor=cursor)
+        fills = data.get("fills", [])
+        all_fills.extend(fills)
+        cursor = data.get("cursor")
+        if not cursor or not fills:
+            break
+    return all_fills
+
+
+async def get_all_settlements(client) -> list:
+    """Fetch all settlements."""
+    all_settlements = []
+    cursor = None
+    while True:
+        data = await client.get_settlements(limit=100, cursor=cursor)
+        settlements = data.get("settlements", [])
+        all_settlements.extend(settlements)
+        cursor = data.get("cursor")
+        if not cursor or not settlements:
+            break
+    return all_settlements
+
+
 @router.get("/summary")
 async def get_summary(
     period: str = Query("all", description="Time period: 1h, 1d, 7d, 30d, all"),
 ):
-    """Get portfolio summary with key stats."""
+    """Get portfolio summary with key stats and proper P/L calculation."""
     client = get_kalshi_client()
     
     # Get current balance
@@ -152,25 +208,37 @@ async def get_summary(
     elif period == "30d":
         min_ts = int((now - timedelta(days=30)).timestamp() * 1000)
     
-    fills_data = await client.get_fills(limit=100, min_ts=min_ts)
-    fills = fills_data.get("fills", [])
+    # Get ALL fills for cost basis calculation
+    all_fills = await get_all_fills(client)
+    
+    # Filter fills by period for volume/trade count
+    period_fills = [
+        f for f in all_fills
+        if min_ts is None or (parse_timestamp_to_ms(f.get("created_time")) or 0) >= min_ts
+    ]
     
     # Calculate trading stats
-    total_volume = sum(abs(f.get("count", 0) * f.get("yes_price", f.get("no_price", 0))) for f in fills)
-    trade_count = len(fills)
+    total_volume = sum(
+        abs(f.get("count", 0) * (f.get("yes_price", 0) if f.get("side") == "yes" else f.get("no_price", 0)))
+        for f in period_fills
+    )
+    trade_count = len(period_fills)
     
-    # Get settlements for realized P/L
-    settlements_data = await client.get_settlements(limit=100)
-    settlements = settlements_data.get("settlements", [])
+    # Get all settlements and calculate proper P/L
+    all_settlements = await get_all_settlements(client)
+    cost_by_ticker = calculate_cost_basis_by_ticker(all_fills)
     
-    # Filter settlements by period
+    # Calculate realized P/L with proper cost basis
     realized_pnl = 0
-    for s in settlements:
+    for s in all_settlements:
         settled_ts = s.get("settled_time")
         settled_ts_ms = parse_timestamp_to_ms(settled_ts)
         if settled_ts_ms:
             if min_ts is None or settled_ts_ms >= min_ts:
-                realized_pnl += s.get("revenue", 0)
+                ticker = s.get("ticker")
+                revenue = s.get("revenue", 0)
+                cost_basis = cost_by_ticker.get(ticker, 0)
+                realized_pnl += revenue - cost_basis
     
     return {
         "balance": balance_data.get("balance", 0),
