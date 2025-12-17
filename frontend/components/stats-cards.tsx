@@ -30,7 +30,7 @@ export function StatsCards({ period }: StatsCardsProps) {
 
   if (summaryLoading || winRateLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {[...Array(7)].map((_, i) => (
           <Card key={i} className="animate-pulse">
             <CardContent className="p-4">
@@ -43,7 +43,6 @@ export function StatsCards({ period }: StatsCardsProps) {
     );
   }
 
-  // Calculate ROI based on deposits
   const netDeposited = txSummary?.net_deposited ?? 0;
   const totalValue = summary?.total_value ?? 0;
   const roi =
@@ -55,13 +54,15 @@ export function StatsCards({ period }: StatsCardsProps) {
       label: "Total Balance",
       value: formatCents(summary?.total_value ?? 0),
       icon: Wallet,
-      color: "text-blue-500",
+      iconColor: "text-kalshi-blue",
+      valueColor: "text-foreground",
     },
     {
       label: "Net Deposited",
       value: formatCents(netDeposited),
       icon: Activity,
-      color: "text-slate-400",
+      iconColor: "text-muted-foreground",
+      valueColor: "text-foreground",
     },
     {
       label: "ROI",
@@ -72,48 +73,59 @@ export function StatsCards({ period }: StatsCardsProps) {
           ? formatCentsWithSign(roiValue)
           : "Add deposits to track",
       icon: Percent,
-      color: roi >= 0 ? "text-green-500" : "text-red-500",
+      iconColor: roi >= 0 ? "text-kalshi-green" : "text-destructive",
+      valueColor: roi >= 0 ? "text-kalshi-green" : "text-destructive",
     },
     {
       label: "Realized P/L",
       value: formatCentsWithSign(winRate?.net_pnl ?? 0),
       icon: (winRate?.net_pnl ?? 0) >= 0 ? TrendingUp : TrendingDown,
-      color: getPnLColor(winRate?.net_pnl ?? 0),
+      iconColor: getPnLColor(winRate?.net_pnl ?? 0),
+      valueColor: getPnLColor(winRate?.net_pnl ?? 0),
     },
     {
       label: "Win Rate",
       value: formatPercent(winRate?.win_rate ?? 0),
       icon: Target,
-      color: (winRate?.win_rate ?? 0) >= 50 ? "text-green-500" : "text-red-500",
+      iconColor:
+        (winRate?.win_rate ?? 0) >= 50
+          ? "text-kalshi-green"
+          : "text-destructive",
+      valueColor:
+        (winRate?.win_rate ?? 0) >= 50
+          ? "text-kalshi-green"
+          : "text-destructive",
     },
     {
       label: "Trades",
       value: `${summary?.trade_count ?? 0}`,
       subtext: `${winRate?.wins ?? 0}W / ${winRate?.losses ?? 0}L`,
       icon: Activity,
-      color: "text-orange-500",
+      iconColor: "text-kalshi-orange",
+      valueColor: "text-foreground",
     },
     {
       label: "Portfolio",
       value: formatCents(summary?.portfolio_value ?? 0),
       subtext: `Cash: ${formatCents(summary?.balance ?? 0)}`,
       icon: PieChart,
-      color: "text-purple-500",
+      iconColor: "text-kalshi-purple",
+      valueColor: "text-foreground",
     },
   ];
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
       {stats.map((stat) => (
-        <Card key={stat.label}>
+        <Card key={stat.label} className="overflow-hidden">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-              <span className="text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 mb-2">
+              <stat.icon className={`h-4 w-4 ${stat.iconColor}`} />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 {stat.label}
               </span>
             </div>
-            <div className={`text-xl font-bold ${stat.color}`}>
+            <div className={`text-xl font-bold ${stat.valueColor}`}>
               {stat.value}
             </div>
             {stat.subtext && (

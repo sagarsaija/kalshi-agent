@@ -17,17 +17,21 @@ const periods: { value: Period; label: string }[] = [
   { value: "all", label: "All" },
 ];
 
-export function PeriodSelector({ value, onChange, className }: PeriodSelectorProps) {
+export function PeriodSelector({
+  value,
+  onChange,
+  className,
+}: PeriodSelectorProps) {
   return (
-    <div className={cn("inline-flex rounded-lg bg-muted p-1", className)}>
+    <div className={cn("inline-flex rounded-full bg-muted p-1", className)}>
       {periods.map((period) => (
         <button
           key={period.value}
           onClick={() => onChange(period.value)}
           className={cn(
-            "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+            "px-3 py-1.5 text-sm font-medium rounded-full transition-all duration-200",
             value === period.value
-              ? "bg-background text-foreground shadow-sm"
+              ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >

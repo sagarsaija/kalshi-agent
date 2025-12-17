@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Period } from "@/lib/api";
 import { PeriodSelector } from "@/components/ui/period-selector";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { StatsCards } from "@/components/stats-cards";
 import { PortfolioChart } from "@/components/portfolio-chart";
 import { PnLChart } from "@/components/pnl-chart";
@@ -27,34 +28,43 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border sticky top-0 bg-background/95 backdrop-blur z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Kalshi Dashboard</h1>
-              <p className="text-sm text-muted-foreground">
-                Track your trades and P/L
-              </p>
+      {/* Header - Kalshi Style */}
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-primary">Kalshi</span>
+                <span className="text-sm text-muted-foreground font-medium">
+                  Dashboard
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+
+            {/* Right side controls */}
+            <div className="flex items-center gap-3">
               <PeriodSelector value={period} onChange={setPeriod} />
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 className="p-2 rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                title="Refresh data"
               >
                 <RefreshCw
-                  className={`h-5 w-5 ${isRefreshing ? "animate-spin" : ""}`}
+                  className={`h-5 w-5 text-muted-foreground ${
+                    isRefreshing ? "animate-spin" : ""
+                  }`}
                 />
               </button>
+              <ThemeToggle />
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 lg:px-6 py-6 space-y-6">
         {/* Stats Cards */}
         <StatsCards period={period} />
 
@@ -79,9 +89,20 @@ export default function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-4 mt-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          Data refreshes automatically every 60 seconds • Powered by Kalshi API
+      <footer className="border-t border-border py-6 mt-8">
+        <div className="container mx-auto px-4 lg:px-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-primary">Kalshi</span>
+              <span className="text-sm text-muted-foreground">
+                Personal Dashboard
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Data refreshes automatically every 60 seconds • Powered by Kalshi
+              API
+            </p>
+          </div>
         </div>
       </footer>
     </div>

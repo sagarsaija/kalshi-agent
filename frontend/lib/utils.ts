@@ -90,19 +90,19 @@ export function formatRelativeTime(isoString: string): string {
 }
 
 /**
- * Get color class for P/L
+ * Get color class for P/L - uses Kalshi colors
  */
 export function getPnLColor(value: number): string {
-  if (value > 0) return "text-green-500";
-  if (value < 0) return "text-red-500";
+  if (value > 0) return "text-kalshi-green";
+  if (value < 0) return "text-destructive";
   return "text-muted-foreground";
 }
 
 /**
- * Get background color class for P/L
+ * Get background color class for P/L - uses Kalshi colors
  */
 export function getPnLBgColor(value: number): string {
-  if (value > 0) return "bg-green-500/10";
-  if (value < 0) return "bg-red-500/10";
+  if (value > 0) return "bg-kalshi-green/10";
+  if (value < 0) return "bg-destructive/10";
   return "bg-muted";
 }

@@ -36,60 +36,66 @@ export function TradesTable({ period }: TradesTableProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle>Recent Trades</CardTitle>
-          <span className="text-sm text-muted-foreground">{fills.length} trades</span>
+          <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
+            {fills.length} trades
+          </span>
         </div>
       </CardHeader>
       <CardContent>
         {fills.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">No trades in this period</div>
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            No trades in this period
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-5 px-5">
+            <table className="kalshi-table">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 font-medium text-muted-foreground">Time</th>
-                  <th className="text-left py-2 font-medium text-muted-foreground">Market</th>
-                  <th className="text-center py-2 font-medium text-muted-foreground">Side</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Qty</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Price</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Cost</th>
+                <tr>
+                  <th>Time</th>
+                  <th>Market</th>
+                  <th className="text-center">Side</th>
+                  <th className="text-right">Qty</th>
+                  <th className="text-right">Price</th>
+                  <th className="text-right">Cost</th>
                 </tr>
               </thead>
               <tbody>
                 {fills.map((fill) => {
-                  const price = fill.side === "yes" ? fill.yes_price : fill.no_price;
+                  const price =
+                    fill.side === "yes" ? fill.yes_price : fill.no_price;
                   const cost = price * fill.count;
                   const isBuy = fill.action === "buy";
 
                   return (
-                    <tr
-                      key={fill.id}
-                      className="border-b border-border/50 hover:bg-muted/50"
-                    >
-                      <td className="py-3 text-muted-foreground">
-                        {fill.created_at ? formatRelativeTime(fill.created_at) : "-"}
+                    <tr key={fill.id}>
+                      <td className="text-muted-foreground text-xs">
+                        {fill.created_at
+                          ? formatRelativeTime(fill.created_at)
+                          : "-"}
                       </td>
-                      <td className="py-3">
-                        <div className="font-medium truncate max-w-[150px]">{fill.ticker}</div>
+                      <td>
+                        <div className="font-medium text-sm truncate max-w-[120px]">
+                          {fill.ticker}
+                        </div>
                       </td>
-                      <td className="py-3 text-center">
+                      <td className="text-center">
                         <span
                           className={cn(
                             "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
                             fill.side === "yes"
-                              ? "bg-green-500/10 text-green-500"
-                              : "bg-red-500/10 text-red-500"
+                              ? "bg-kalshi-green/10 text-kalshi-green"
+                              : "bg-destructive/10 text-destructive"
                           )}
                         >
                           {fill.action.toUpperCase()} {fill.side.toUpperCase()}
                         </span>
                       </td>
-                      <td className="text-right py-3">{fill.count}</td>
-                      <td className="text-right py-3">{price}¢</td>
+                      <td className="text-right text-sm">{fill.count}</td>
+                      <td className="text-right text-sm">{price}¢</td>
                       <td
                         className={cn(
-                          "text-right py-3 font-medium",
-                          isBuy ? "text-red-400" : "text-green-400"
+                          "text-right text-sm font-medium",
+                          isBuy ? "text-destructive" : "text-kalshi-green"
                         )}
                       >
                         {isBuy ? "-" : "+"}

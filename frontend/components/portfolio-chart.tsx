@@ -5,8 +5,6 @@ import { formatCents, formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Period } from "@/lib/api";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -30,7 +28,7 @@ export function PortfolioChart({ period }: PortfolioChartProps) {
           <CardTitle>Portfolio Value</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] animate-pulse bg-muted rounded" />
+          <div className="h-[300px] animate-pulse bg-muted rounded-lg" />
         </CardContent>
       </Card>
     );
@@ -45,7 +43,7 @@ export function PortfolioChart({ period }: PortfolioChartProps) {
           <CardTitle>Portfolio Value</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
             No portfolio history available
           </div>
         </CardContent>
@@ -53,11 +51,10 @@ export function PortfolioChart({ period }: PortfolioChartProps) {
     );
   }
 
-  // Format data for chart
   const chartData = history.map((point) => ({
     timestamp: point.timestamp,
     date: formatDate(point.timestamp),
-    value: point.total_value / 100, // Convert to dollars
+    value: point.total_value / 100,
     balance: point.balance / 100,
     portfolio: point.portfolio_value / 100,
   }));
@@ -73,40 +70,54 @@ export function PortfolioChart({ period }: PortfolioChartProps) {
       <CardContent>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+            <AreaChart
+              data={chartData}
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            >
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#00d26a" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#00d26a" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+                strokeOpacity={0.5}
+              />
               <XAxis
                 dataKey="date"
-                stroke="#666"
-                tick={{ fill: "#888", fontSize: 12 }}
-                tickLine={{ stroke: "#666" }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                tickLine={{ stroke: "hsl(var(--border))" }}
+                axisLine={{ stroke: "hsl(var(--border))" }}
               />
               <YAxis
                 domain={[minValue, maxValue]}
-                stroke="#666"
-                tick={{ fill: "#888", fontSize: 12 }}
-                tickLine={{ stroke: "#666" }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                tickLine={{ stroke: "hsl(var(--border))" }}
+                axisLine={{ stroke: "hsl(var(--border))" }}
                 tickFormatter={(value) => `$${value.toFixed(0)}`}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1f2937",
-                  border: "1px solid #374151",
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                 }}
-                labelStyle={{ color: "#9ca3af" }}
-                formatter={(value: number) => [formatCents(value * 100), "Total Value"]}
+                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
+                formatter={(value: number) => [
+                  formatCents(value * 100),
+                  "Total Value",
+                ]}
               />
               <Area
                 type="monotone"
                 dataKey="value"
-                stroke="#3b82f6"
+                stroke="#00d26a"
                 strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#colorValue)"

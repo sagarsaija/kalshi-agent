@@ -1,7 +1,7 @@
 "use client";
 
 import { usePositions } from "@/lib/hooks";
-import { formatCents, formatCentsWithSign, getPnLColor } from "@/lib/utils";
+import { formatCents, formatCentsWithSign, getPnLColor, cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
 export function PositionsTable() {
@@ -31,50 +31,64 @@ export function PositionsTable() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle>Open Positions</CardTitle>
-          <span className="text-sm text-muted-foreground">{positions.length} positions</span>
+          <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
+            {positions.length} positions
+          </span>
         </div>
       </CardHeader>
       <CardContent>
         {positions.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">No open positions</div>
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            No open positions
+          </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto -mx-5 px-5">
+            <table className="kalshi-table">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-2 font-medium text-muted-foreground">Market</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Position</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">Exposure</th>
-                  <th className="text-right py-2 font-medium text-muted-foreground">P/L</th>
+                <tr>
+                  <th>Market</th>
+                  <th className="text-right">Position</th>
+                  <th className="text-right">Exposure</th>
+                  <th className="text-right">P/L</th>
                 </tr>
               </thead>
               <tbody>
                 {positions.map((position) => (
-                  <tr key={position.ticker} className="border-b border-border/50 hover:bg-muted/50">
-                    <td className="py-3">
-                      <div className="font-medium">{position.ticker}</div>
+                  <tr key={position.ticker}>
+                    <td>
+                      <div className="font-medium text-sm">
+                        {position.ticker}
+                      </div>
                       {position.market_title && (
-                        <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                        <div className="text-xs text-muted-foreground truncate max-w-[180px]">
                           {position.market_title}
                         </div>
                       )}
                     </td>
-                    <td className="text-right py-3">
+                    <td className="text-right">
                       <span
-                        className={
+                        className={cn(
+                          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
                           position.position > 0
-                            ? "text-green-500"
+                            ? "bg-kalshi-green/10 text-kalshi-green"
                             : position.position < 0
-                            ? "text-red-500"
+                            ? "bg-destructive/10 text-destructive"
                             : ""
-                        }
+                        )}
                       >
                         {position.position > 0 ? "+" : ""}
-                        {position.position} {position.position > 0 ? "YES" : "NO"}
+                        {Math.abs(position.position)}{" "}
+                        {position.position > 0 ? "YES" : "NO"}
                       </span>
                     </td>
-                    <td className="text-right py-3">{formatCents(position.market_exposure)}</td>
-                    <td className={`text-right py-3 ${getPnLColor(position.realized_pnl)}`}>
+                    <td className="text-right text-sm">
+                      {formatCents(position.market_exposure)}
+                    </td>
+                    <td
+                      className={`text-right text-sm font-medium ${getPnLColor(
+                        position.realized_pnl
+                      )}`}
+                    >
                       {formatCentsWithSign(position.realized_pnl)}
                     </td>
                   </tr>

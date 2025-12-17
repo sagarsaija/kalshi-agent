@@ -7,8 +7,9 @@ import {
   useAddTransaction,
   useDeleteTransaction,
 } from "@/lib/hooks";
-import { formatCents, formatDateTime } from "@/lib/utils";
+import { formatCents, formatDateTime, cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { X } from "lucide-react";
 
 export function TransactionsPanel() {
   const [showForm, setShowForm] = useState(false);
@@ -52,7 +53,12 @@ export function TransactionsPanel() {
           <CardTitle>Deposits & Withdrawals</CardTitle>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+            className={cn(
+              "text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-200",
+              showForm
+                ? "bg-muted text-muted-foreground hover:bg-muted/80"
+                : "bg-primary text-primary-foreground hover:opacity-90"
+            )}
           >
             {showForm ? "Cancel" : "+ Add"}
           </button>
@@ -62,23 +68,27 @@ export function TransactionsPanel() {
         {/* Summary */}
         {!loadingSummary && summary && (
           <div className="grid grid-cols-3 gap-2 text-sm">
-            <div className="bg-green-500/10 rounded p-2 text-center">
-              <div className="text-green-500 font-medium">
+            <div className="bg-kalshi-green/10 rounded-lg p-3 text-center">
+              <div className="text-kalshi-green font-semibold">
                 {formatCents(summary.total_deposits)}
               </div>
-              <div className="text-xs text-muted-foreground">Deposited</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Deposited
+              </div>
             </div>
-            <div className="bg-red-500/10 rounded p-2 text-center">
-              <div className="text-red-500 font-medium">
+            <div className="bg-destructive/10 rounded-lg p-3 text-center">
+              <div className="text-destructive font-semibold">
                 {formatCents(summary.total_withdrawals)}
               </div>
-              <div className="text-xs text-muted-foreground">Withdrawn</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                Withdrawn
+              </div>
             </div>
-            <div className="bg-blue-500/10 rounded p-2 text-center">
-              <div className="text-blue-500 font-medium">
+            <div className="bg-kalshi-blue/10 rounded-lg p-3 text-center">
+              <div className="text-kalshi-blue font-semibold">
                 {formatCents(summary.net_deposited)}
               </div>
-              <div className="text-xs text-muted-foreground">Net</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Net</div>
             </div>
           </div>
         )}
@@ -87,28 +97,30 @@ export function TransactionsPanel() {
         {showForm && (
           <form
             onSubmit={handleSubmit}
-            className="space-y-3 p-3 bg-muted/50 rounded-lg"
+            className="space-y-3 p-4 bg-muted/50 rounded-xl animate-fade-in"
           >
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setType("deposit")}
-                className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors ${
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200",
                   type === "deposit"
-                    ? "bg-green-600 text-white"
+                    ? "bg-kalshi-green text-white"
                     : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                }`}
+                )}
               >
                 Deposit
               </button>
               <button
                 type="button"
                 onClick={() => setType("withdrawal")}
-                className={`flex-1 py-1.5 px-3 rounded text-sm font-medium transition-colors ${
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all duration-200",
                   type === "withdrawal"
-                    ? "bg-red-600 text-white"
+                    ? "bg-destructive text-white"
                     : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                }`}
+                )}
               >
                 Withdrawal
               </button>
@@ -120,7 +132,7 @@ export function TransactionsPanel() {
               placeholder="Amount ($)"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-full px-3 py-2 rounded bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
               required
             />
             <input
@@ -128,12 +140,12 @@ export function TransactionsPanel() {
               placeholder="Note (optional)"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full px-3 py-2 rounded bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             />
             <button
               type="submit"
               disabled={addTransaction.isPending}
-              className="w-full py-2 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50 transition-colors"
+              className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 hover:opacity-90 transition-all"
             >
               {addTransaction.isPending ? "Adding..." : "Add Transaction"}
             </button>
@@ -142,36 +154,38 @@ export function TransactionsPanel() {
 
         {/* Transaction list */}
         {loadingTransactions ? (
-          <div className="h-32 animate-pulse bg-muted rounded" />
+          <div className="h-32 animate-pulse bg-muted rounded-lg" />
         ) : (
-          <div className="space-y-1 max-h-48 overflow-y-auto">
+          <div className="space-y-1 max-h-52 overflow-y-auto">
             {transactions?.transactions.length === 0 ? (
-              <div className="text-center text-muted-foreground text-sm py-4">
+              <div className="text-center text-muted-foreground text-sm py-6">
                 No transactions yet. Add your first deposit!
               </div>
             ) : (
               transactions?.transactions.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center justify-between py-2 px-2 hover:bg-muted/50 rounded group"
+                  className="flex items-center justify-between py-2.5 px-3 hover:bg-muted/50 rounded-lg group transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className={`text-xs px-2 py-0.5 rounded ${
+                      className={cn(
+                        "text-xs px-2 py-1 rounded-md font-medium",
                         t.type === "deposit"
-                          ? "bg-green-500/20 text-green-500"
-                          : "bg-red-500/20 text-red-500"
-                      }`}
+                          ? "bg-kalshi-green/15 text-kalshi-green"
+                          : "bg-destructive/15 text-destructive"
+                      )}
                     >
-                      {t.type === "deposit" ? "+" : "-"}
+                      {t.type === "deposit" ? "+" : "−"}
                     </span>
                     <div>
                       <div
-                        className={`font-medium text-sm ${
+                        className={cn(
+                          "font-semibold text-sm",
                           t.type === "deposit"
-                            ? "text-green-500"
-                            : "text-red-500"
-                        }`}
+                            ? "text-kalshi-green"
+                            : "text-destructive"
+                        )}
                       >
                         {formatCents(t.amount)}
                       </div>
@@ -188,9 +202,9 @@ export function TransactionsPanel() {
                     </span>
                     <button
                       onClick={() => handleDelete(t.id)}
-                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 text-xs px-1 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/10 text-destructive transition-all"
                     >
-                      ×
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>

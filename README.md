@@ -136,12 +136,12 @@ Your entries are stored locally in the SQLite database (`backend/kalshi_dashboar
 
 ### Transaction API Endpoints
 
-| Endpoint                      | Method | Description                    |
-| ----------------------------- | ------ | ------------------------------ |
-| `/api/transactions`           | GET    | List all deposits/withdrawals  |
-| `/api/transactions`           | POST   | Add a new transaction          |
-| `/api/transactions/summary`   | GET    | Get totals (deposits, withdrawals, net) |
-| `/api/transactions/{id}`      | DELETE | Remove a transaction           |
+| Endpoint                    | Method | Description                             |
+| --------------------------- | ------ | --------------------------------------- |
+| `/api/transactions`         | GET    | List all deposits/withdrawals           |
+| `/api/transactions`         | POST   | Add a new transaction                   |
+| `/api/transactions/summary` | GET    | Get totals (deposits, withdrawals, net) |
+| `/api/transactions/{id}`    | DELETE | Remove a transaction                    |
 
 ## Project Structure
 

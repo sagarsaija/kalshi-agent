@@ -1,7 +1,13 @@
 "use client";
 
 import { useMarketBreakdown } from "@/lib/hooks";
-import { formatCents, formatCentsWithSign, formatPercent, getPnLColor, cn } from "@/lib/utils";
+import {
+  formatCents,
+  formatCentsWithSign,
+  formatPercent,
+  getPnLColor,
+  cn,
+} from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Period } from "@/lib/api";
 
@@ -38,22 +44,32 @@ export function MarketBreakdown({ period }: MarketBreakdownProps) {
       </CardHeader>
       <CardContent>
         {breakdown.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">No market data available</div>
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            No market data available
+          </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {breakdown.slice(0, 10).map((market) => {
               const maxPnL = Math.max(...breakdown.map((m) => Math.abs(m.pnl)));
               const barWidth = (Math.abs(market.pnl) / maxPnL) * 100;
 
               return (
-                <div key={market.ticker} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium truncate max-w-[200px]">{market.ticker}</span>
+                <div key={market.ticker} className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium text-sm truncate max-w-[160px]">
+                      {market.ticker}
+                    </span>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">
-                        {market.wins}W/{market.losses}L ({formatPercent(market.win_rate)})
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {market.wins}W/{market.losses}L (
+                        {formatPercent(market.win_rate)})
                       </span>
-                      <span className={cn("font-medium", getPnLColor(market.pnl))}>
+                      <span
+                        className={cn(
+                          "font-semibold text-sm whitespace-nowrap",
+                          getPnLColor(market.pnl)
+                        )}
+                      >
                         {formatCentsWithSign(market.pnl)}
                       </span>
                     </div>
@@ -61,8 +77,8 @@ export function MarketBreakdown({ period }: MarketBreakdownProps) {
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all",
-                        market.pnl >= 0 ? "bg-green-500" : "bg-red-500"
+                        "h-full rounded-full transition-all duration-500",
+                        market.pnl >= 0 ? "bg-kalshi-green" : "bg-destructive"
                       )}
                       style={{ width: `${barWidth}%` }}
                     />

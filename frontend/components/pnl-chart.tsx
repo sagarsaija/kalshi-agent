@@ -5,7 +5,6 @@ import { formatCents, formatDate } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Period } from "@/lib/api";
 import {
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -25,7 +24,8 @@ interface PnLChartProps {
 export function PnLChart({ period }: PnLChartProps) {
   const [showCumulative, setShowCumulative] = useState(true);
   const { data: dailyData, isLoading: dailyLoading } = useDailyPnL(period);
-  const { data: cumulativeData, isLoading: cumulativeLoading } = useCumulativePnL(period);
+  const { data: cumulativeData, isLoading: cumulativeLoading } =
+    useCumulativePnL(period);
 
   const isLoading = dailyLoading || cumulativeLoading;
 
@@ -36,7 +36,7 @@ export function PnLChart({ period }: PnLChartProps) {
           <CardTitle>Profit / Loss</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] animate-pulse bg-muted rounded" />
+          <div className="h-[300px] animate-pulse bg-muted rounded-lg" />
         </CardContent>
       </Card>
     );
@@ -52,7 +52,7 @@ export function PnLChart({ period }: PnLChartProps) {
           <CardTitle>Profit / Loss</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
             No P/L data available
           </div>
         </CardContent>
@@ -60,7 +60,6 @@ export function PnLChart({ period }: PnLChartProps) {
     );
   }
 
-  // Merge daily and cumulative data
   const chartData = dailyPnL.map((day, index) => ({
     date: formatDate(day.date),
     fullDate: day.date,
@@ -78,7 +77,7 @@ export function PnLChart({ period }: PnLChartProps) {
           <CardTitle>Profit / Loss</CardTitle>
           <button
             onClick={() => setShowCumulative(!showCumulative)}
-            className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors font-medium text-muted-foreground"
           >
             {showCumulative ? "Hide" : "Show"} Cumulative
           </button>
@@ -87,38 +86,50 @@ export function PnLChart({ period }: PnLChartProps) {
       <CardContent>
         <div className="h-[300px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+            <ComposedChart
+              data={chartData}
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+                strokeOpacity={0.5}
+              />
               <XAxis
                 dataKey="date"
-                stroke="#666"
-                tick={{ fill: "#888", fontSize: 12 }}
-                tickLine={{ stroke: "#666" }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                tickLine={{ stroke: "hsl(var(--border))" }}
+                axisLine={{ stroke: "hsl(var(--border))" }}
               />
               <YAxis
                 yAxisId="daily"
-                stroke="#666"
-                tick={{ fill: "#888", fontSize: 12 }}
-                tickLine={{ stroke: "#666" }}
+                stroke="hsl(var(--muted-foreground))"
+                tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                tickLine={{ stroke: "hsl(var(--border))" }}
+                axisLine={{ stroke: "hsl(var(--border))" }}
                 tickFormatter={(value) => `$${value.toFixed(0)}`}
               />
               {showCumulative && (
                 <YAxis
                   yAxisId="cumulative"
                   orientation="right"
-                  stroke="#666"
-                  tick={{ fill: "#888", fontSize: 12 }}
-                  tickLine={{ stroke: "#666" }}
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                  tickLine={{ stroke: "hsl(var(--border))" }}
+                  axisLine={{ stroke: "hsl(var(--border))" }}
                   tickFormatter={(value) => `$${value.toFixed(0)}`}
                 />
               )}
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1f2937",
-                  border: "1px solid #374151",
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                 }}
-                labelStyle={{ color: "#9ca3af" }}
+                labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                itemStyle={{ color: "hsl(var(--foreground))" }}
                 formatter={(value: number, name: string) => {
                   const label = name === "daily" ? "Daily P/L" : "Cumulative";
                   return [formatCents(value * 100), label];
@@ -128,8 +139,8 @@ export function PnLChart({ period }: PnLChartProps) {
                 {chartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.daily >= 0 ? "#22c55e" : "#ef4444"}
-                    fillOpacity={0.8}
+                    fill={entry.daily >= 0 ? "#00d26a" : "#ef4444"}
+                    fillOpacity={0.85}
                   />
                 ))}
               </Bar>
@@ -138,7 +149,7 @@ export function PnLChart({ period }: PnLChartProps) {
                   yAxisId="cumulative"
                   type="monotone"
                   dataKey="cumulative"
-                  stroke="#f59e0b"
+                  stroke="#3b82f6"
                   strokeWidth={2}
                   dot={false}
                 />
