@@ -2,8 +2,6 @@
 
 A real-time dashboard to track your Kalshi trades, P/L, and portfolio performance.
 
-![Dashboard Preview](https://via.placeholder.com/800x400?text=Kalshi+Dashboard)
-
 ## Features
 
 - 📊 **Portfolio Overview** - Track total balance, cash, and portfolio value
@@ -13,6 +11,8 @@ A real-time dashboard to track your Kalshi trades, P/L, and portfolio performanc
 - 📋 **Trade History** - View all executed trades (fills)
 - ✅ **Settlements** - Track resolved positions
 - 🏷️ **Market Breakdown** - P/L analysis by market/ticker
+- 💰 **Deposit/Withdrawal Tracking** - Manual entry for ROI calculation
+- 📊 **ROI Calculation** - True return on investment based on deposits
 - ⏱️ **Time Filters** - 1H, 1D, 7D, 30D, All Time views
 - 🔄 **Auto-refresh** - Data updates every 60 seconds
 
@@ -113,6 +113,36 @@ Frontend will be available at `http://localhost:3000`
 
 **Period options:** `1h`, `1d`, `7d`, `30d`, `all`
 
+## Tracking Deposits & Withdrawals
+
+The Kalshi API does not provide an endpoint for deposit/withdrawal history. To calculate your true ROI (Return on Investment), you need to manually log your deposits and withdrawals in the dashboard.
+
+### Why is this needed?
+
+Without deposit tracking, the dashboard can only show your current balance and trading P/L. But to know your actual return, you need to know how much you put in:
+
+```
+ROI = (Current Balance - Net Deposited) / Net Deposited × 100%
+```
+
+### How to use
+
+1. Click the **"+ Add"** button in the **Deposits & Withdrawals** panel
+2. Select **Deposit** or **Withdrawal**
+3. Enter the amount and an optional note
+4. Click **Add Transaction**
+
+Your entries are stored locally in the SQLite database (`backend/kalshi_dashboard.db`) and persist across restarts.
+
+### Transaction API Endpoints
+
+| Endpoint                      | Method | Description                    |
+| ----------------------------- | ------ | ------------------------------ |
+| `/api/transactions`           | GET    | List all deposits/withdrawals  |
+| `/api/transactions`           | POST   | Add a new transaction          |
+| `/api/transactions/summary`   | GET    | Get totals (deposits, withdrawals, net) |
+| `/api/transactions/{id}`      | DELETE | Remove a transaction           |
+
 ## Project Structure
 
 ```
@@ -128,7 +158,8 @@ Frontend will be available at `http://localhost:3000`
 │   │   └── routers/
 │   │       ├── portfolio.py     # Balance, positions
 │   │       ├── trades.py        # Fills, settlements
-│   │       └── analytics.py     # P/L calculations
+│   │       ├── analytics.py     # P/L calculations
+│   │       └── transactions.py  # Deposit/withdrawal tracking
 │   └── requirements.txt
 │
 ├── frontend/
@@ -144,7 +175,8 @@ Frontend will be available at `http://localhost:3000`
 │   │   ├── positions-table.tsx
 │   │   ├── trades-table.tsx
 │   │   ├── settlements-table.tsx
-│   │   └── market-breakdown.tsx
+│   │   ├── market-breakdown.tsx
+│   │   └── transactions-panel.tsx  # Deposit/withdrawal UI
 │   ├── lib/
 │   │   ├── api.ts               # API client
 │   │   ├── hooks.ts             # React Query hooks
