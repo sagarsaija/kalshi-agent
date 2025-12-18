@@ -200,6 +200,10 @@ class KalshiClient:
         """Get market details by ticker."""
         return await self._request("GET", f"/markets/{ticker}")
 
+    async def get_event(self, event_ticker: str) -> dict[str, Any]:
+        """Get event details by ticker."""
+        return await self._request("GET", f"/events/{event_ticker}")
+
     async def get_markets(
         self, 
         tickers: Optional[list[str]] = None,

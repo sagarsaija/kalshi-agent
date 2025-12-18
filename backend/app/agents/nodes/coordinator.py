@@ -35,7 +35,7 @@ async def coordinator_node(state: ResearchState) -> ResearchState:
     # Parse URL if provided
     ticker = None
     if kalshi_url:
-        ticker = parse_kalshi_url(kalshi_url)
+        ticker, _ = parse_kalshi_url(kalshi_url)
     
     # Determine routing based on query content
     next_node = "researcher"  # Default

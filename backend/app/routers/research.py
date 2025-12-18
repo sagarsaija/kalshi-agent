@@ -71,50 +71,76 @@ class ChatResponse(BaseModel):
 @router.post("/analyze-url", response_model=AnalysisResponse)
 async def analyze_url(request: AnalyzeURLRequest):
     """
-    Analyze a Kalshi market URL and provide AI-powered insights.
+    Analyze a Kalshi market URL and provide market data with quick analysis.
     """
-    # Parse the URL
-    ticker = parse_kalshi_url(request.url)
+    # Parse the URL (returns tuple now)
+    ticker, event_type = parse_kalshi_url(request.url)
     if not ticker:
         raise HTTPException(status_code=400, detail="Could not parse Kalshi URL")
     
-    # Fetch market data
+    # Fetch market data (with fallback search built in)
     market_data = await get_market_details(ticker)
     if not market_data:
-        raise HTTPException(status_code=404, detail=f"Market {ticker} not found")
+        # Try a broader search using the event type
+        from app.agents.tools.kalshi_tools import search_markets
+        related = await search_markets(event_type or ticker, limit=5)
+        
+        detail = f"Market '{ticker}' not found in Kalshi's active markets."
+        if related:
+            related_tickers = [m.get('ticker') for m in related]
+            detail += f" Found related: {', '.join(related_tickers[:3])}"
+        else:
+            detail += " This market may not be open for trading yet, or has already settled."
+        
+        raise HTTPException(status_code=404, detail=detail)
     
-    # Run research agent
-    result = await run_research_query(
-        query=f"Analyze the market: {market_data.get('title', ticker)}",
-        kalshi_url=request.url,
+    # Build market response
+    yes_bid = market_data.get("yes_bid")
+    yes_ask = market_data.get("yes_ask")
+    mid_price = (yes_bid + yes_ask) / 2 if yes_bid and yes_ask else None
+    
+    market_response = MarketResponse(
+        ticker=market_data.get("ticker", ticker),
+        title=market_data.get("title"),
+        subtitle=market_data.get("subtitle"),
+        yes_bid=yes_bid,
+        yes_ask=yes_ask,
+        no_bid=market_data.get("no_bid"),
+        no_ask=market_data.get("no_ask"),
+        volume_24h=market_data.get("volume_24h"),
+        open_interest=market_data.get("open_interest"),
+        status=market_data.get("status"),
+        implied_probability=calculate_implied_probability(mid_price) if mid_price else None,
     )
     
-    # Build response
-    market_response = None
-    if market_data:
-        yes_bid = market_data.get("yes_bid")
-        yes_ask = market_data.get("yes_ask")
-        mid_price = (yes_bid + yes_ask) / 2 if yes_bid and yes_ask else None
-        
-        market_response = MarketResponse(
-            ticker=market_data.get("ticker", ticker),
-            title=market_data.get("title"),
-            subtitle=market_data.get("subtitle"),
-            yes_bid=yes_bid,
-            yes_ask=yes_ask,
-            no_bid=market_data.get("no_bid"),
-            no_ask=market_data.get("no_ask"),
-            volume_24h=market_data.get("volume_24h"),
-            open_interest=market_data.get("open_interest"),
-            status=market_data.get("status"),
-            implied_probability=calculate_implied_probability(mid_price) if mid_price else None,
-        )
+    # Generate quick analysis (no LLM call - much faster)
+    title = market_data.get("title", "Unknown")
+    volume = market_data.get("volume_24h") or 0
+    oi = market_data.get("open_interest") or 0
+    
+    analysis = f"**Market: {title}**\n"
+    if yes_bid and yes_ask:
+        spread = yes_ask - yes_bid
+        analysis += f"- Current Yes price: {yes_bid}¢ bid / {yes_ask}¢ ask (spread: {spread}¢)\n"
+        if mid_price:
+            analysis += f"- Implied probability: {calculate_implied_probability(mid_price)}\n"
+    analysis += f"- 24h Volume: {volume:,}\n"
+    analysis += f"- Open Interest: {oi:,}\n"
+    
+    # Add top options if this is an event
+    top_options = market_data.get("top_options")
+    if top_options:
+        analysis += "\n**Top Outcomes:**\n"
+        for opt in top_options:
+            opt_title = opt.get("title", "").replace("Will the ", "").replace(" win the 2026 Pro Basketball Finals?", "")
+            opt_price = opt.get("yes_bid") or 0
+            analysis += f"- {opt_title}: {opt_price}¢\n"
     
     return AnalysisResponse(
-        ticker=ticker,
+        ticker=market_data.get("ticker", ticker),
         market=market_response,
-        analysis=result.get("analysis", ""),
-        research_report=result.get("research_report"),
+        analysis=analysis,
+        research_report=None,  # Skip heavy AI analysis for quick response
     )
 
 

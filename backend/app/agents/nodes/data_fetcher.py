@@ -31,7 +31,7 @@ async def data_fetcher_node(state: ResearchState) -> ResearchState:
     try:
         # If we have a URL but no ticker, parse it
         if kalshi_url and not ticker:
-            ticker = parse_kalshi_url(kalshi_url)
+            ticker, _ = parse_kalshi_url(kalshi_url)
         
         # Fetch market data if we have a ticker
         if ticker:

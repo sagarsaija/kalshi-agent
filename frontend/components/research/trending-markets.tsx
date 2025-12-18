@@ -11,6 +11,7 @@ interface TrendingMarket {
   yes_ask: number | null;
   volume_24h: number | null;
   implied_probability: string | null;
+  url: string | null;
 }
 
 export function TrendingMarkets() {
@@ -24,7 +25,7 @@ export function TrendingMarkets() {
 
     try {
       const response = await fetch("/api/research/trending?limit=8");
-      
+
       if (!response.ok) {
         throw new Error("Failed to fetch trending markets");
       }
@@ -71,13 +72,15 @@ export function TrendingMarkets() {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : error ? (
-        <p className="text-sm text-muted-foreground text-center py-4">{error}</p>
+        <p className="text-sm text-muted-foreground text-center py-4">
+          {error}
+        </p>
       ) : (
         <div className="space-y-2">
           {markets.map((market, index) => (
             <a
               key={market.ticker}
-              href={`https://kalshi.com/markets/${market.ticker}`}
+              href={market.url || `https://kalshi.com/markets/${market.ticker}`}
               target="_blank"
               rel="noopener noreferrer"
               className="block p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors group"

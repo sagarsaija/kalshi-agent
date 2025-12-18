@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2, ExternalLink, TrendingUp, BarChart3 } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  ExternalLink,
+  TrendingUp,
+  BarChart3,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 interface MarketData {
@@ -45,12 +51,19 @@ export function URLAnalyzer() {
         body: JSON.stringify({ url }),
       });
 
+      const text = await response.text();
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to analyze URL");
+        // Try to parse as JSON for detailed error, fall back to text
+        try {
+          const data = JSON.parse(text);
+          throw new Error(data.detail || "Failed to analyze URL");
+        } catch {
+          throw new Error(text || `Server error: ${response.status}`);
+        }
       }
 
-      const data = await response.json();
+      const data = JSON.parse(text);
       setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -67,7 +80,7 @@ export function URLAnalyzer() {
         <p className="text-muted-foreground text-sm mb-4">
           Paste a Kalshi market URL to get AI-powered analysis
         </p>
-        
+
         <div className="flex gap-2">
           <input
             type="text"
@@ -91,9 +104,7 @@ export function URLAnalyzer() {
           </button>
         </div>
 
-        {error && (
-          <p className="mt-4 text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
       </Card>
 
       {/* Results */}
@@ -104,9 +115,13 @@ export function URLAnalyzer() {
             <Card className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold">{result.market.title}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {result.market.title}
+                  </h3>
                   {result.market.subtitle && (
-                    <p className="text-sm text-muted-foreground">{result.market.subtitle}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {result.market.subtitle}
+                    </p>
                   )}
                 </div>
                 <a
