@@ -1,0 +1,20 @@
+# Package Manager
+
+- Use pnpm instead of npm for all frontend dependencies
+- Commands: `pnpm install`, `pnpm add <pkg>`, `pnpm dev`, etc.
+
+## Tech Stack
+
+- Next.js 15 with App Router and Turbopack
+- TypeScript with strict mode enabled
+- Tailwind CSS for all styling (no CSS modules, no styled-components)
+- fal.ai OpenRouter with `anthropic/claude-sonnet-4.5` for AI
+- Daytona for sandboxed code execution and file operations
+
+## AI Integration
+
+- All LLM calls go through fal.ai OpenRouter
+- Endpoint: `openrouter/router` (NOT `fal-ai/any-llm`)
+- Default model: `anthropic/claude-sonnet-4.5`
+- Use `@fal-ai/client` with `fal.subscribe("openrouter/router", { input: { model, prompt, system_prompt } })`
+- Reference: https://fal.ai/models/openrouter/router
