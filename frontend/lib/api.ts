@@ -104,6 +104,68 @@ export interface MarketBreakdown {
   win_rate: number;
 }
 
+export interface Transaction {
+  id: number;
+  type: "deposit" | "withdrawal";
+  amount: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface TransactionSummary {
+  total_deposits: number;
+  total_withdrawals: number;
+  net_deposited: number;
+}
+
+// Research types
+export interface ResearchMarket {
+  ticker: string;
+  title: string;
+  subtitle?: string;
+  yes_bid: number | null;
+  yes_ask: number | null;
+  no_bid: number | null;
+  no_ask: number | null;
+  volume_24h: number | null;
+  open_interest: number | null;
+  status: string;
+  implied_probability?: string | null;
+}
+
+export interface AnalysisResult {
+  ticker: string;
+  market: ResearchMarket | null;
+  analysis: string;
+  research_report: string | null;
+}
+
+export interface ChatResponse {
+  query: string;
+  response: string;
+  market_data?: Record<string, unknown>;
+  analysis?: string;
+}
+
+export interface TrendingMarketsResponse {
+  markets: ResearchMarket[];
+  count: number;
+}
+
+export interface SearchMarketsResponse {
+  markets: ResearchMarket[];
+  count: number;
+  query: string;
+}
+
+export interface EVCalculation {
+  cost: number;
+  potential_win: number;
+  expected_value: number;
+  ev_percent: number;
+  edge: number;
+}
+
 async function fetchApi<T>(
   endpoint: string,
   params?: Record<string, string>
@@ -120,20 +182,6 @@ async function fetchApi<T>(
     throw new Error(`API error: ${response.status}`);
   }
   return response.json();
-}
-
-export interface Transaction {
-  id: number;
-  type: "deposit" | "withdrawal";
-  amount: number;
-  note: string | null;
-  created_at: string;
-}
-
-export interface TransactionSummary {
-  total_deposits: number;
-  total_withdrawals: number;
-  net_deposited: number;
 }
 
 async function postApi<T>(
@@ -225,4 +273,41 @@ export const api = {
   ) => postApi<Transaction>("/transactions", { type, amount, note }),
   deleteTransaction: (id: number) =>
     deleteApi<{ deleted: boolean }>(`/transactions/${id}`),
+
+  // Research
+  analyzeUrl: (url: string) =>
+    postApi<AnalysisResult>("/research/analyze-url", { url }),
+  
+  chat: (query: string, kalshiUrl?: string) =>
+    postApi<ChatResponse>("/research/chat", { query, kalshi_url: kalshiUrl }),
+  
+  getTrendingMarkets: (limit = 10) =>
+    fetchApi<TrendingMarketsResponse>("/research/trending", {
+      limit: limit.toString(),
+    }),
+  
+  searchMarkets: (query: string, limit = 20) =>
+    fetchApi<SearchMarketsResponse>("/research/search", {
+      q: query,
+      limit: limit.toString(),
+    }),
+  
+  getMarketDetails: (ticker: string) =>
+    fetchApi<{
+      market: ResearchMarket;
+      metrics: Record<string, number>;
+      summary: string;
+    }>(`/research/market/${ticker}`),
+  
+  compareMarkets: (tickers: string[]) =>
+    postApi<{ markets: ResearchMarket[]; count: number; requested: number }>(
+      "/research/compare",
+      { tickers }
+    ),
+  
+  calculateEV: (probability: number, yesPrice: number) =>
+    postApi<{ input: { probability: number; yes_price: number }; result: EVCalculation }>(
+      `/research/ev-calculator?probability=${probability}&yes_price=${yesPrice}`,
+      {}
+    ),
 };

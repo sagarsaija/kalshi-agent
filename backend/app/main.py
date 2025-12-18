@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import portfolio, trades, analytics, transactions
+from app.routers import portfolio, trades, analytics, transactions, research
 
 
 @asynccontextmanager
@@ -17,8 +17,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Kalshi Trading Dashboard API",
-    description="API for tracking Kalshi trades, P/L, and portfolio performance",
-    version="1.0.0",
+    description="API for tracking Kalshi trades, P/L, portfolio performance, and AI-powered research",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -36,6 +36,7 @@ app.include_router(portfolio.router, prefix="/api")
 app.include_router(trades.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
 app.include_router(transactions.router, prefix="/api")
+app.include_router(research.router, prefix="/api")
 
 
 @app.get("/")

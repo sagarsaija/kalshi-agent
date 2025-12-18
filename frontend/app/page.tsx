@@ -14,6 +14,7 @@ import { MarketBreakdown } from "@/components/market-breakdown";
 import { TransactionsPanel } from "@/components/transactions-panel";
 import { RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<Period>("7d");
@@ -32,11 +33,31 @@ export default function Dashboard() {
       <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 lg:px-6">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-primary">
+            {/* Logo & Nav */}
+            <div className="flex items-center gap-8">
+              <Link href="/" className="text-2xl font-bold text-primary">
                 Kalshi Agent
-              </span>
+              </Link>
+              <nav className="flex items-center gap-6">
+                <Link
+                  href="/"
+                  className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/research"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Research
+                </Link>
+                <Link
+                  href="/trading-bot"
+                  className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Trading Bot
+                </Link>
+              </nav>
             </div>
 
             {/* Right side controls */}
